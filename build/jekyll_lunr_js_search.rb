@@ -124,8 +124,10 @@ module Jekyll
       def output_ext(doc)
         if doc.is_a?(Jekyll::Document)
           Jekyll::Renderer.new(@site, doc).output_ext
-        else
+        elsif doc.respond_to?(:output_ext)
           doc.output_ext
+        else
+          ''
         end
       end
 
@@ -137,7 +139,7 @@ module Jekyll
         site.documents.each {|document| items << document.dup }
 
         # only process files that will be converted to .html and only non excluded files
-        items.select! {|i| i.respond_to?(:output_ext) && output_ext(i) == '.html' && ! @excludes.any? {|s| (i.url =~ Regexp.new(s)) != nil } }
+        items.select! {|i| output_ext(i) == '.html' && ! @excludes.any? {|s| (i.url =~ Regexp.new(s)) != nil } }
         items.reject! {|i| i.data['exclude_from_search'] }
 
         items
@@ -165,24 +167,24 @@ module Jekyll
       def initialize(site)
         @site = site
       end
-      
+
       # render item, but without using its layout
       def prepare(item)
         layout = item.data["layout"]
         begin
           item.data.delete("layout")
 
-          if item.is_a?(Jekyll::Document)          
+          if item.is_a?(Jekyll::Document)
             output = Jekyll::Renderer.new(@site, item).run
           else
             item.render({}, @site.site_payload)
-            output = item.output  
+            output = item.output
           end
         ensure
           # restore original layout
           item.data["layout"] = layout
         end
-      
+
         output
       end
 
@@ -193,7 +195,7 @@ module Jekyll
         Nokogiri::HTML(prepare(layoutless)).text
       end
     end
-  end  
+  end
 end
 require 'nokogiri'
 
@@ -245,9 +247,9 @@ module Jekyll
   end
 end
 module Jekyll
-  module LunrJsSearch  
+  module LunrJsSearch
     class SearchIndexFile < Jekyll::StaticFile
-      # Override write as the index.json index file has already been created 
+      # Override write as the index.json index file has already been created
       def write(dest)
         true
       end
